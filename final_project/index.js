@@ -6,13 +6,6 @@ const genl_routes = require('./router/general.js').general;
 
 const app = express();
 const PORT =5000;
-let users = [
-    {
-        "username":"customer",
-        "password":"password123"
-    }
-];
-
 
 app.use("/customer/auth/*", function auth(req,res,next){
 //Write the authenication mechanism here
