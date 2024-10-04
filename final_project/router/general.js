@@ -14,10 +14,6 @@ public_users.post("/register", (req,res) => {
 public_users.get('/',function (req, res) {
   //Get the list of books available 
   const bookString = JSON.stringify(books);
-
-  if (bookString) {
-    console.log(bookString); // Output in an array
-  }
   
   // Send the book list as a response
   return res.status(200).json({ books });
