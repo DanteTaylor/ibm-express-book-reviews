@@ -27,18 +27,30 @@ public_users.get('/', async function (req, res) {
 });
 
 
-// Get book details based on ISBN
-public_users.get('/isbn/:isbn', function (req, res) {
+// Simulate Axios-style Promise for fetching a book by ISBN
+function getBookByISBN(isbn) {
+  return new Promise((resolve, reject) => {
+    if (books[isbn]) {
+      resolve(books[isbn]); // Resolve the Promise with the book details
+    } else {
+      reject("ISBN book number not found"); // Reject the Promise if the book is not found
+    }
+  });
+}
+
+// Get book details based on ISBN using async-await
+public_users.get('/isbn/:isbn', async function (req, res) {
   const isbn = req.params.isbn; // Pulling ISBN from the request parameters
-  
-  // Book has an object with ISBN as keys
-  if (books[isbn]) { // Check if the book exists with the given ISBN
-    return res.status(200).json(books[isbn]); // Return the book details
-  } 
-  else {
-    return res.status(404).json({message: "ISBN book number not found"});
+
+  try {
+    const bookDetails = await getBookByISBN(isbn); // Wait for the Promise to resolve
+    return res.status(200).json(bookDetails); // Send the book details as JSON response
+  } catch (error) {
+    return res.status(404).json({ message: error }); // Handle error if the book is not found
   }
 });
+
+
 
 // Function to normalize the author's name (convert to lowercase and remove spaces & hyphens)
 function normalizeName(name) {
