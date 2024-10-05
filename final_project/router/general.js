@@ -5,11 +5,25 @@ let users = require("./auth_users.js").users;
 const public_users = express.Router();
 
 
-// Get the book list available in the shop
-public_users.get('/',function (req, res) {
-  // Get the list of books available
-  // Object is automatically converted to a JSON string before being sent as a response.
-  return res.status(200).json({ books });
+// Simulate Axios-style Promise for fetching books
+function getBooks() {
+  return new Promise((resolve, reject) => {
+    if (books) {
+      resolve(books); // Resolve the Promise if books exist
+    } else {
+      reject("Books data not available"); // Reject if there's an error
+    }
+  });
+}
+
+// Get the book list using async-await
+public_users.get('/', async function (req, res) {
+  try {
+    const bookList = await getBooks(); // Wait for the Promise to resolve
+    return res.status(200).json({ books: bookList }); // Send the books list as JSON response
+  } catch (error) {
+    return res.status(500).json({ message: "Error fetching books: " + error });
+  }
 });
 
 
