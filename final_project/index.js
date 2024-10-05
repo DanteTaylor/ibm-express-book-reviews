@@ -40,7 +40,7 @@ app.post('/register', (req, res) => {
 });
 
 // Route to login user and generate JWT
-app.post('/login', (req, res) => {
+app.post('/customer/login', (req, res) => {
     const { username, password } = req.body;
   
     // Check if the username exists
@@ -89,3 +89,4 @@ app.use("/", genl_routes);  // General routes
 app.listen(PORT, () => {
     console.log("Server is running on port" + PORT);
 });
+
