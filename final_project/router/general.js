@@ -9,12 +9,15 @@ public_users.post("/register", (req,res) => {
   return res.status(300).json({message: "Yet to be implemented"});
 });
 
+
+
 // Get the book list available in the shop
 public_users.get('/',function (req, res) {
   // Get the list of books available
   // Object is automatically converted to a JSON string before being sent as a response.
   return res.status(200).json({ books });
 });
+
 
 // Get book details based on ISBN
 public_users.get('/isbn/:isbn', function (req, res) {
@@ -23,7 +26,8 @@ public_users.get('/isbn/:isbn', function (req, res) {
   // Book has an object with ISBN as keys
   if (books[isbn]) { // Check if the book exists with the given ISBN
     return res.status(200).json(books[isbn]); // Return the book details
-  } else {
+  } 
+  else {
     return res.status(404).json({message: "ISBN book number not found"});
   }
 });
@@ -69,10 +73,26 @@ public_users.get('/title/:title',function (req, res) {
   return res.status(300).json({message: "Yet to be implemented"});
 });
 
-//  Get book review
-public_users.get('/review/:isbn',function (req, res) {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+// Get reviews based on ISBN
+public_users.get('/review/:isbn', function (req, res) {
+  const isbn = req.params.isbn;  // Extract ISBN from the request parameters
+
+  // Check if the book with the given ISBN exists
+  if (books[isbn]) {
+    const reviews = books[isbn].reviews;  // Access the reviews object for the book
+
+    // Check if the reviews object is empty (no reviews)
+    if (Object.keys(reviews).length === 0) {
+      return res.status(200).json({ message: "Successfully processed the request, but there are no reviews." });
+    }
+
+    // If reviews exist, return them with a 200 status code
+    return res.status(200).json({ reviews: reviews });
+    
+  } else {
+    // If the book with the given ISBN is not found, return 404
+    return res.status(404).json({ message: "404 Error - No book not found." });
+  }
 });
 
 module.exports.general = public_users;
