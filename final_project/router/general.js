@@ -58,34 +58,47 @@ function normalizeName(name) {
 }
 
   
-// Route to find books by author (handles variations like spaces or hyphens)
-public_users.get('/author/:author', function (req, res) {
-  const author = req.params.author; // Extract author from request parameters
-  
-  // Normalize the author name from the request
-  const normalizedAuthor = normalizeName(author);
+// Simulate Axios-style Promise for fetching books by author
+function getBooksByAuthor(author) {
+  return new Promise((resolve, reject) => {
+    // Normalize the author name from the request
+    const normalizedAuthor = normalizeName(author);
 
-  // Get all the keys (ISBNs) of the 'books' object
-  const allBookKeys = Object.keys(books); 
+    // Get all the keys (ISBNs) of the 'books' object
+    const allBookKeys = Object.keys(books);
 
-  // Create an array to hold books that match the normalized author's name
-  const booksByAuthor = [];
+    // Create an array to hold books that match the normalized author's name
+    const booksByAuthor = [];
 
-  // Iterate through the books object to find books that match the normalized author name
-  allBookKeys.forEach(isbn => {
-    const bookAuthor = normalizeName(books[isbn].author); // Normalize stored author name
-    if (bookAuthor === normalizedAuthor) {
-      booksByAuthor.push(books[isbn]); // Add matching books to the array
+    // Iterate through the books object to find books that match the normalized author name
+    allBookKeys.forEach(isbn => {
+      const bookAuthor = normalizeName(books[isbn].author); // Normalize stored author name
+      if (bookAuthor === normalizedAuthor) {
+        booksByAuthor.push(books[isbn]); // Add matching books to the array
+      }
+    });
+
+    // If any books are found, resolve the Promise with the books
+    if (booksByAuthor.length > 0) {
+      resolve(booksByAuthor);
+    } else {
+      reject("No books found by this author");
     }
   });
+}
 
-  // If any books are found, return them
-  if (booksByAuthor.length > 0) {
-    return res.status(200).json(booksByAuthor);
-  } else {
-    return res.status(404).json({ message: "No books found by this author" });
+// Route to find books by author using async-await
+public_users.get('/author/:author', async function (req, res) {
+  const author = req.params.author; // Extract author from request parameters
+
+  try {
+    const booksByAuthor = await getBooksByAuthor(author); // Wait for the Promise to resolve
+    return res.status(200).json(booksByAuthor); // Send the list of books by the author as JSON response
+  } catch (error) {
+    return res.status(404).json({ message: error }); // Handle error if no books are found
   }
 });
+
 
 // Get all books based on title
 public_users.get('/title/:title', function (req, res) {
