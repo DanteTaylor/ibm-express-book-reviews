@@ -17,7 +17,7 @@ const authenticatedUser = (username, password) => {
 };
 
 // Only registered users can login
-regd_users.post("/login", (req, res) => {
+regd_users.post("/customer/login", (req, res) => {
   const { username, password } = req.body;
 
   // Check if both username and password are provided
