@@ -100,34 +100,47 @@ public_users.get('/author/:author', async function (req, res) {
 });
 
 
-// Get all books based on title
-public_users.get('/title/:title', function (req, res) {
-  const title = req.params.title; // Extract title from request parameters
-  
-  // Normalize the title from the request
-  const normalizedTitle = normalizeName(title);
+// Simulate Axios-style Promise for fetching books by title
+function getBooksByTitle(title) {
+  return new Promise((resolve, reject) => {
+    // Normalize the title from the request
+    const normalizedTitle = normalizeName(title);
 
-  // Get all the keys (ISBNs) of the 'books' object
-  const allBookKeys = Object.keys(books); 
+    // Get all the keys (ISBNs) of the 'books' object
+    const allBookKeys = Object.keys(books);
 
-  // Create an array to hold books that match the normalized title
-  const booksByTitle = [];
+    // Create an array to hold books that match the normalized title
+    const booksByTitle = [];
 
-  // Iterate through the books object to find books that match the normalized title
-  allBookKeys.forEach(isbn => {
-    const bookTitle = normalizeName(books[isbn].title); // Normalize stored title
-    if (bookTitle === normalizedTitle) {
-      booksByTitle.push(books[isbn]); // Add matching books to the array
+    // Iterate through the books object to find books that match the normalized title
+    allBookKeys.forEach(isbn => {
+      const bookTitle = normalizeName(books[isbn].title); // Normalize stored title
+      if (bookTitle === normalizedTitle) {
+        booksByTitle.push(books[isbn]); // Add matching books to the array
+      }
+    });
+
+    // If any books are found, resolve the Promise with the books
+    if (booksByTitle.length > 0) {
+      resolve(booksByTitle);
+    } else {
+      reject("No books found with this title");
     }
   });
+}
 
-  // If any books are found, return them
-  if (booksByTitle.length > 0) {
-    return res.status(200).json(booksByTitle);
-  } else {
-    return res.status(404).json({ message: "No books found with this title" });
+// Route to get books by title using async-await
+public_users.get('/title/:title', async function (req, res) {
+  const title = req.params.title; // Extract title from request parameters
+
+  try {
+    const booksByTitle = await getBooksByTitle(title); // Wait for the Promise to resolve
+    return res.status(200).json(booksByTitle); // Send the list of books with the title as JSON response
+  } catch (error) {
+    return res.status(404).json({ message: error }); // Handle error if no books are found
   }
 });
+
 
 
 // Get reviews based on ISBN
