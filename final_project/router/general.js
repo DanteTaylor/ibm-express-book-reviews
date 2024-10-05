@@ -141,28 +141,36 @@ public_users.get('/title/:title', async function (req, res) {
   }
 });
 
+// Simulate Axios-style Promise for fetching reviews by ISBN
+function getReviewsByISBN(isbn) {
+  return new Promise((resolve, reject) => {
+    // Check if the book with the given ISBN exists
+    if (books[isbn]) {
+      const reviews = books[isbn].reviews;  // Access the reviews object for the book
 
+      // Check if the reviews object is empty (no reviews)
+      if (Object.keys(reviews).length === 0) {
+        resolve({ message: "Successfully processed the request, but there are no reviews." });
+      } else {
+        resolve({ reviews: reviews });  // Resolve the Promise with the reviews
+      }
+    } else {
+      reject("404 Error - No book found with the given ISBN");
+    }
+  });
+}
 
-// Get reviews based on ISBN
-public_users.get('/review/:isbn', function (req, res) {
+// Route to get reviews by ISBN using async-await
+public_users.get('/review/:isbn', async function (req, res) {
   const isbn = req.params.isbn;  // Extract ISBN from the request parameters
 
-  // Check if the book with the given ISBN exists
-  if (books[isbn]) {
-    const reviews = books[isbn].reviews;  // Access the reviews object for the book
-
-    // Check if the reviews object is empty (no reviews)
-    if (Object.keys(reviews).length === 0) {
-      return res.status(200).json({ message: "Successfully processed the request, but there are no reviews." });
-    }
-
-    // If reviews exist, return them with a 200 status code
-    return res.status(200).json({ reviews: reviews });
-    
-  } else {
-    // If the book with the given ISBN is not found, return 404
-    return res.status(404).json({ message: "404 Error - No book not found." });
+  try {
+    const reviews = await getReviewsByISBN(isbn);  // Wait for the Promise to resolve
+    return res.status(200).json(reviews);  // Send the reviews as JSON response
+  } catch (error) {
+    return res.status(404).json({ message: error });  // Handle error if the book is not found
   }
 });
+
 
 module.exports.general = public_users;
