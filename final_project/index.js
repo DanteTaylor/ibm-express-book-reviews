@@ -1,23 +1,38 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const session = require('express-session');  // Added session middleware
+const session = require('express-session');  // Session-based authentication
+const bodyParser = require('body-parser');   // Body-parser to handle JSON and form data
 const customer_routes = require('./router/auth_users.js').authenticated;
 const genl_routes = require('./router/general.js').general;
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Middleware to parse JSON request bodies
-app.use(express.json()); 
+// Use body-parser middleware
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true })); // Parses URL-encoded data
 
-// Set up express-session middleware
+// Set up express-session middleware for session-based authentication
 app.use(session({
     secret: 'your_secret_key',  // Replace with a secure secret key
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false }  // In production, use `secure: true` when using HTTPS
+    resave: false,  // Don't save session if unmodified
+    saveUninitialized: false,  // Only save session if something is stored
+    cookie: {
+        secure: false,  // In production, set to true when using HTTPS
+        httpOnly: true,  // Ensure cookies are only sent over HTTP(S), not accessible to client JS
+        maxAge: 60 * 60 * 1000  // 1 hour expiration for the session cookie
+    }
 }));
 
-let users = {};  // Example in-memory user store
+// Example in-memory user store (we can also import this from auth_users.js if shared)
+let users = {};  // Users are dynamically added during registration
+
+// Middleware to protect routes that require authentication (session-based)
+const isAuthenticated = (req, res, next) => {
+    if (req.session.isLoggedIn) {
+        next();
+    } else {
+        res.status(401).json({ message: 'Unauthorized, please log in first.' });
+    }
+};
 
 // Route to register a new user
 app.post('/register', (req, res) => {
@@ -39,7 +54,7 @@ app.post('/register', (req, res) => {
     return res.status(201).json({ message: "User registered successfully!" });
 });
 
-// Route to login user and generate JWT
+// Route to log in a user (session-based)
 app.post('/customer/login', (req, res) => {
     const { username, password } = req.body;
   
@@ -53,40 +68,34 @@ app.post('/customer/login', (req, res) => {
         return res.status(401).json({ message: "Invalid password." });
     }
   
-    // Generate JWT token (valid for 1 hour)
-    const token = jwt.sign({ username: username }, process.env.JWT_SECRET || "access", { expiresIn: '1h' });
+    // Log in the user by setting session variables
+    req.session.isLoggedIn = true;
+    req.session.username = username;
   
-    // Store the JWT token in the session
-    req.session.authorization = { accessToken: token };
-  
-    return res.status(200).json({ message: "Login successful!", token: token });
+    return res.status(200).json({ message: "Login successful!" });
 });
 
-// Middleware to protect customer routes (JWT authentication)
-app.use("/customer/auth/*", function auth(req, res, next) {
-    // Check if the user has a valid access token
-    if (req.session.authorization) {
-        let token = req.session.authorization['accessToken'];
-
-        // Verify the JWT token
-        jwt.verify(token, process.env.JWT_SECRET || "access", (err, user) => {
-            if (!err) {
-                req.user = user; // Attach user information to the request
-                next(); // Proceed to the next middleware or route
-            } else {
-                return res.status(403).json({ message: "User not authenticated" });
-            }
-        });
-    } else {
-        return res.status(403).json({ message: "User not logged in" });
-    }
+// Route to log out a user (destroy the session)
+app.post('/customer/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            return res.status(500).json({ message: 'Error logging out.' });
+        }
+        res.clearCookie('connect.sid'); // Clear the session cookie
+        res.json({ message: 'Logged out successfully.' });
+    });
 });
 
-app.use("/customer", customer_routes);  // Protected customer routes
-app.use("/", genl_routes);  // General routes
+// Protect the route for adding/modifying reviews (only logged-in users can access)
+app.use("/auth/review", isAuthenticated);  // All POST/PUT routes for /auth/review require login
+
+// Apply customer routes (for authenticated users to add/modify reviews)
+app.use("/auth", customer_routes); 
+
+// Apply general routes (open to all users, for viewing reviews)
+app.use("/", genl_routes); 
 
 // Start the server
 app.listen(PORT, () => {
-    console.log("Server is running on port" + PORT);
+    console.log(`Server is running on port ${PORT}`);
 });
-
